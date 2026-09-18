@@ -3,156 +3,79 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Channel Keyword Search — JustLog</title>
+  <title>Channel Keyword Search — JustLog (fast)</title>
   <style>
     :root {
-      --bg: #0e0e10;
-      --panel: #18181b;
-      --border: #2a2a2e;
-      --text: #efeff1;
-      --muted: #adadb8;
-      --accent: #9147ff;
-      --accent-hover: #772ce8;
-      --ok: #00c853;
-      --warn: #ffb300;
-      --err: #f44336;
-      --msg-bg: #1f1f23;
+      --bg: #0e0e10; --panel: #18181b; --border: #2a2a2e; --text: #efeff1;
+      --muted: #adadb8; --accent: #9147ff; --accent-hover: #772ce8;
+      --ok: #00c853; --err: #f44336; --msg-bg: #1f1f23;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      line-height: 1.45;
+      background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.45;
     }
     header {
-      border-bottom: 1px solid var(--border);
-      padding: 1rem 1.5rem;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      background: var(--panel);
+      border-bottom: 1px solid var(--border); padding: 1rem 1.5rem;
+      display: flex; align-items: center; gap: 0.75rem; background: var(--panel); flex-wrap: wrap;
     }
     header h1 { font-size: 1.15rem; font-weight: 700; }
     header span { color: var(--muted); font-size: 0.85rem; }
-    main { max-width: 960px; margin: 0 auto; padding: 1.5rem; }
+    main { max-width: 980px; margin: 0 auto; padding: 1.5rem; }
     .card {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 1.25rem;
-      margin-bottom: 1.25rem;
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 10px; padding: 1.25rem; margin-bottom: 1.25rem;
     }
-    label {
-      display: block;
-      font-size: 0.8rem;
-      color: var(--muted);
-      margin-bottom: 0.35rem;
-      font-weight: 500;
-    }
+    label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 0.35rem; font-weight: 500; }
     .row { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.9rem; }
     .field { flex: 1 1 140px; min-width: 120px; }
     input, select {
-      width: 100%;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      color: var(--text);
-      border-radius: 6px;
-      padding: 0.55rem 0.7rem;
-      font-size: 0.95rem;
-      outline: none;
+      width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text);
+      border-radius: 6px; padding: 0.55rem 0.7rem; font-size: 0.95rem; outline: none;
     }
     input:focus { border-color: var(--accent); }
     button {
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      padding: 0.6rem 1.2rem;
-      font-weight: 600;
-      cursor: pointer;
-      font-size: 0.95rem;
+      background: var(--accent); color: #fff; border: none; border-radius: 6px;
+      padding: 0.6rem 1.2rem; font-weight: 600; cursor: pointer; font-size: 0.95rem;
     }
     button:hover:not(:disabled) { background: var(--accent-hover); }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
-    button.secondary {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text);
-    }
+    button.secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
     button.secondary:hover:not(:disabled) { border-color: var(--muted); }
     .actions { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
     .hint { font-size: 0.8rem; color: var(--muted); margin-top: 0.6rem; }
     .status {
-      font-size: 0.9rem;
-      padding: 0.6rem 0.8rem;
-      border-radius: 6px;
-      background: var(--msg-bg);
-      border: 1px solid var(--border);
-      margin-bottom: 1rem;
-      white-space: pre-wrap;
+      font-size: 0.9rem; padding: 0.6rem 0.8rem; border-radius: 6px;
+      background: var(--msg-bg); border: 1px solid var(--border);
+      margin-bottom: 1rem; white-space: pre-wrap; font-variant-numeric: tabular-nums;
     }
     .status.err { border-color: var(--err); color: #ff8a80; }
     .status.ok { border-color: var(--ok); }
-    .progress {
-      height: 6px;
-      background: var(--border);
-      border-radius: 3px;
-      overflow: hidden;
-      margin: 0.5rem 0 0;
-    }
-    .progress > div {
-      height: 100%;
-      background: var(--accent);
-      width: 0%;
-      transition: width 0.15s ease;
-    }
+    .progress { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin: 0.5rem 0 0; }
+    .progress > div { height: 100%; background: var(--accent); width: 0%; transition: width 0.12s ease; }
     .meta {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      margin-bottom: 0.75rem;
-      font-size: 0.85rem;
-      color: var(--muted);
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; font-size: 0.85rem; color: var(--muted);
     }
     .results { display: flex; flex-direction: column; gap: 0.4rem; }
     .msg {
-      background: var(--msg-bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 0.55rem 0.75rem;
-      font-size: 0.9rem;
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 0.35rem 0.75rem;
+      background: var(--msg-bg); border: 1px solid var(--border); border-radius: 6px;
+      padding: 0.55rem 0.75rem; font-size: 0.9rem;
+      display: grid; grid-template-columns: auto 1fr; gap: 0.35rem 0.75rem;
     }
     .msg .time { color: var(--muted); font-size: 0.78rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
     .msg .user { color: var(--accent); font-weight: 600; cursor: pointer; }
     .msg .user:hover { text-decoration: underline; }
     .msg .text { grid-column: 1 / -1; word-break: break-word; }
-    .msg .text mark {
-      background: #5c3d00;
-      color: #ffd54f;
-      padding: 0 2px;
-      border-radius: 2px;
-    }
+    .msg .text mark { background: #5c3d00; color: #ffd54f; padding: 0 2px; border-radius: 2px; }
     .empty { color: var(--muted); text-align: center; padding: 2rem; }
-    footer {
-      text-align: center;
-      color: var(--muted);
-      font-size: 0.75rem;
-      padding: 1.5rem;
-    }
-    footer a { color: var(--muted); }
+    footer { text-align: center; color: var(--muted); font-size: 0.75rem; padding: 1.5rem; }
   </style>
 </head>
 <body>
   <header>
     <h1>Channel Keyword Search</h1>
-    <span>same JustLog data as tv.supa.sh · no username required</span>
+    <span>same JustLog data as tv.supa.sh · no username · parallel + plain-text</span>
   </header>
 
   <main>
@@ -185,7 +108,17 @@
             <option value="14">14 days</option>
             <option value="30">30 days</option>
             <option value="90">90 days</option>
-            <option value="0">All available (slow)</option>
+            <option value="365">365 days</option>
+            <option value="0">All available</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="concurrency">Parallel downloads</label>
+          <select id="concurrency">
+            <option value="8">8</option>
+            <option value="16" selected>16</option>
+            <option value="24">24</option>
+            <option value="32">32</option>
           </select>
         </div>
       </div>
@@ -198,9 +131,9 @@
         </label>
       </div>
       <p class="hint">
-        Uses <code>logs.zonian.dev</code> (same backend as tv.supa.sh).
-        Full-channel text search is not a native API — this tool downloads each day's channel log and filters in the browser.
-        Big channels / long ranges will take time and use bandwidth.
+        Faster via: <strong>plain-text logs</strong> (~6× smaller than JSON),
+        <strong>parallel day fetches</strong> (16–32), line filter, mirror failover.
+        “All available” on a huge channel still moves a lot of data — try 30–90 days first.
       </p>
     </div>
 
@@ -218,15 +151,24 @@
     </div>
   </main>
 
-  <footer>
-    Not affiliated with Twitch or tv.supa.sh · data from public JustLog instances
-  </footer>
+  <footer>Not affiliated with Twitch or tv.supa.sh · public JustLog instances</footer>
 
   <script>
-    const API = "https://logs.zonian.dev";
-    const $ = (id) => document.getElementById(id);
+    const MIRRORS = [
+      "https://logs.zonian.dev",
+      "https://logxx.dev",
+      "https://logs.potat.app",
+      "https://logs.twitchmetrics.xyz",
+      "https://logs.spanix.team",
+      "https://logs.ivr.fi",
+    ];
 
+    const $ = (id) => document.getElementById(id);
     let abortController = null;
+    let activeBase = MIRRORS[0];
+    let lastMatches = [];
+
+    const LINE_RE = /^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]\s+#\S+\s+(\S+):\s(.*)$/;
 
     function setStatus(text, type = "") {
       const el = $("status");
@@ -236,7 +178,7 @@
     }
 
     function escapeHtml(s) {
-      return s.replace(/[&<>"']/g, (c) =>
+      return String(s).replace(/[&<>"']/g, (c) =>
         ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
       );
     }
@@ -245,52 +187,54 @@
       const safe = escapeHtml(text);
       if (!query) return safe;
       const flags = caseSensitive ? "g" : "gi";
-      const re = new RegExp(
-        query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-        flags
-      );
+      const re = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), flags);
       return safe.replace(re, (m) => `<mark>${m}</mark>`);
     }
 
-    async function fetchJson(url, signal) {
+    async function fetchOk(url, signal) {
       const res = await fetch(url, { signal });
       if (!res.ok) {
         const t = await res.text().catch(() => "");
-        throw new Error(`${res.status} ${res.statusText}${t ? ": " + t.slice(0, 120) : ""}`);
+        const err = new Error(`${res.status} ${res.statusText}${t ? ": " + t.slice(0, 80) : ""}`);
+        err.status = res.status;
+        throw err;
       }
-      return res.json();
+      return res;
     }
 
-    async function getAvailableDates(channel, signal) {
-      const data = await fetchJson(
-        `${API}/list?channel=${encodeURIComponent(channel)}`,
-        signal
-      );
-      return data.availableLogs || [];
-    }
-
-    async function getDayMessages(channel, year, month, day, signal) {
-      const path = day
-        ? `${API}/channel/${encodeURIComponent(channel)}/${year}/${month}/${day}?jsonBasic=1`
-        : `${API}/channel/${encodeURIComponent(channel)}/${year}/${month}?jsonBasic=1`;
-      const data = await fetchJson(path, signal);
-      return data.messages || [];
+    async function resolveBase(channel, signal) {
+      const errors = [];
+      for (const base of MIRRORS) {
+        try {
+          const res = await fetch(`${base}/list?channel=${encodeURIComponent(channel)}`, { signal });
+          if (!res.ok) { errors.push(`${base}: ${res.status}`); continue; }
+          const data = await res.json();
+          const logs = data.availableLogs || [];
+          if (logs.length) {
+            activeBase = base;
+            return { base, dates: logs };
+          }
+          errors.push(`${base}: empty`);
+        } catch (e) {
+          if (e.name === "AbortError") throw e;
+          errors.push(`${base}: ${e.message}`);
+        }
+      }
+      throw new Error("No mirror has logs for this channel.\n" + errors.slice(0, 4).join("\n"));
     }
 
     function filterDates(dates, fromStr, toStr, limitDays) {
       let list = dates.filter((d) => d.day);
       if (fromStr) {
-        const from = fromStr;
         list = list.filter((d) => {
           const key = `${d.year}-${String(d.month).padStart(2, "0")}-${String(d.day).padStart(2, "0")}`;
-          return key >= from;
+          return key >= fromStr;
         });
       }
       if (toStr) {
-        const to = toStr;
         list = list.filter((d) => {
           const key = `${d.year}-${String(d.month).padStart(2, "0")}-${String(d.day).padStart(2, "0")}`;
-          return key <= to;
+          return key <= toStr;
         });
       }
       list.sort((a, b) => {
@@ -302,32 +246,79 @@
       return list;
     }
 
+    async function searchDay(channel, year, month, day, query, caseSensitive, signal) {
+      const url = `${activeBase}/channel/${encodeURIComponent(channel)}/${year}/${month}/${day}`;
+      const res = await fetchOk(url, signal);
+      const text = await res.text();
+      const q = caseSensitive ? query : query.toLowerCase();
+      const matches = [];
+      const lines = text.split("\n");
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (!line) continue;
+        const hay = caseSensitive ? line : line.toLowerCase();
+        if (!hay.includes(q)) continue;
+        const m = LINE_RE.exec(line);
+        if (!m) continue;
+        const body = m[3];
+        const bodyHay = caseSensitive ? body : body.toLowerCase();
+        if (!bodyHay.includes(q)) continue;
+        matches.push({
+          timestamp: m[1].replace(" ", "T") + "Z",
+          displayName: m[2],
+          text: body,
+        });
+      }
+      return { matches, bytes: text.length, lines: lines.length };
+    }
+
+    async function mapPool(items, concurrency, fn, onProgress) {
+      const results = new Array(items.length);
+      let next = 0;
+      let done = 0;
+      async function worker() {
+        while (next < items.length) {
+          const i = next++;
+          results[i] = await fn(items[i], i);
+          done++;
+          onProgress(done, items.length, results[i]);
+        }
+      }
+      const n = Math.min(concurrency, items.length);
+      await Promise.all(Array.from({ length: n }, () => worker()));
+      return results;
+    }
+
     function renderResults(matches, query, caseSensitive) {
       const box = $("results");
       $("resultsCard").style.display = "block";
-      $("resultCount").textContent = `${matches.length} match${matches.length === 1 ? "" : "es"}`;
+      $("resultCount").textContent = `${matches.length.toLocaleString()} match${matches.length === 1 ? "" : "es"}`;
       if (!matches.length) {
         box.innerHTML = `<div class="empty">No messages matched.</div>`;
         return;
       }
-      box.innerHTML = matches
-        .map((m) => {
-          const t = new Date(m.timestamp);
-          const timeStr = isNaN(t) ? m.timestamp : t.toISOString().replace("T", " ").replace(/\.\d+Z$/, " UTC");
-          return `<div class="msg">
+      const MAX_DOM = 2000;
+      const slice = matches.length > MAX_DOM ? matches.slice(0, MAX_DOM) : matches;
+      box.innerHTML =
+        (matches.length > MAX_DOM
+          ? `<div class="empty" style="padding:0.5rem;">Showing first ${MAX_DOM.toLocaleString()} of ${matches.length.toLocaleString()} (all in Copy)</div>`
+          : "") +
+        slice
+          .map((m) => {
+            const timeStr = m.timestamp.replace("T", " ").replace(/Z$/, " UTC");
+            return `<div class="msg">
             <span class="time">${escapeHtml(timeStr)}</span>
-            <span class="user" title="Open user logs on tv.supa.sh" data-user="${escapeHtml(m.displayName)}">${escapeHtml(m.displayName)}</span>
+            <span class="user" data-user="${escapeHtml(m.displayName)}">${escapeHtml(m.displayName)}</span>
             <div class="text">${highlight(m.text || "", query, caseSensitive)}</div>
           </div>`;
-        })
-        .join("");
+          })
+          .join("");
 
       box.querySelectorAll(".user").forEach((el) => {
         el.addEventListener("click", () => {
           const ch = $("channel").value.trim().toLowerCase();
-          const u = el.dataset.user;
           window.open(
-            `https://tv.supa.sh/logs?c=${encodeURIComponent(ch)}&u=${encodeURIComponent(u)}`,
+            `https://tv.supa.sh/logs?c=${encodeURIComponent(ch)}&u=${encodeURIComponent(el.dataset.user)}`,
             "_blank"
           );
         });
@@ -341,15 +332,10 @@
       const fromStr = $("from").value || "";
       const toStr = $("to").value || "";
       const limitDays = Number($("limitDays").value);
+      const concurrency = Number($("concurrency").value) || 16;
 
-      if (!channel) {
-        setStatus("Enter a channel name.", "err");
-        return;
-      }
-      if (!query) {
-        setStatus("Enter a keyword or phrase to search for.", "err");
-        return;
-      }
+      if (!channel) return setStatus("Enter a channel name.", "err");
+      if (!query) return setStatus("Enter a keyword or phrase.", "err");
 
       abortController = new AbortController();
       const { signal } = abortController;
@@ -358,61 +344,79 @@
       $("resultsCard").style.display = "none";
       $("progressWrap").style.display = "block";
       $("progressBar").style.width = "0%";
+      lastMatches = [];
 
-      const matches = [];
+      const t0 = performance.now();
+      let bytesTotal = 0;
+      let daysOk = 0;
+      let daysFail = 0;
+
       try {
-        setStatus("Fetching available dates…");
-        const allDates = await getAvailableDates(channel, signal);
-        if (!allDates.length) {
-          setStatus("No logs found for this channel (or channel not indexed).", "err");
-          return;
-        }
-
+        setStatus("Finding a mirror that has this channel…");
+        const { base, dates: allDates } = await resolveBase(channel, signal);
         const days = filterDates(allDates, fromStr, toStr, limitDays);
         if (!days.length) {
           setStatus("No days in the selected range.", "err");
           return;
         }
 
-        setStatus(`Scanning ${days.length} day(s) for “${query}”…\n0 / ${days.length}`);
+        setStatus(
+          `Mirror: ${base}\nScanning ${days.length} day(s) · ${concurrency} parallel · plain text\n0 / ${days.length}`
+        );
 
-        for (let i = 0; i < days.length; i++) {
-          if (signal.aborted) break;
-          const d = days[i];
-          const label = `${d.year}-${String(d.month).padStart(2, "0")}-${String(d.day).padStart(2, "0")}`;
-          try {
-            const msgs = await getDayMessages(channel, d.year, d.month, d.day, signal);
-            const q = caseSensitive ? query : query.toLowerCase();
-            for (const m of msgs) {
-              const text = m.text || "";
-              const hay = caseSensitive ? text : text.toLowerCase();
-              if (hay.includes(q)) {
-                matches.push(m);
+        const allMatches = [];
+
+        await mapPool(
+          days,
+          concurrency,
+          async (d) => {
+            if (signal.aborted) return null;
+            const label = `${d.year}-${String(d.month).padStart(2, "0")}-${String(d.day).padStart(2, "0")}`;
+            try {
+              const r = await searchDay(channel, d.year, d.month, d.day, query, caseSensitive, signal);
+              return { label, ...r };
+            } catch (err) {
+              if (err.name === "AbortError") throw err;
+              return { label, matches: [], bytes: 0, lines: 0, error: true };
+            }
+          },
+          (done, total, result) => {
+            if (result) {
+              if (result.error) daysFail++;
+              else {
+                daysOk++;
+                bytesTotal += result.bytes || 0;
+                if (result.matches?.length) allMatches.push(...result.matches);
               }
             }
-          } catch (err) {
-            if (err.name === "AbortError") throw err;
-            console.warn("day failed", label, err);
+            const pct = (done / total) * 100;
+            $("progressBar").style.width = pct + "%";
+            const sec = ((performance.now() - t0) / 1000).toFixed(1);
+            const mb = (bytesTotal / 1048576).toFixed(1);
+            setStatus(
+              `Mirror: ${base}\n` +
+                `Scanning ${total} day(s) · ${concurrency} parallel · plain text\n` +
+                `${done} / ${total}  ·  ${allMatches.length} match(es)  ·  ${mb} MB  ·  ${sec}s` +
+                (daysFail ? `  ·  ${daysFail} day(s) skipped` : "")
+            );
           }
-          const pct = ((i + 1) / days.length) * 100;
-          $("progressBar").style.width = pct + "%";
-          setStatus(
-            `Scanning ${days.length} day(s) for “${query}”…\n${i + 1} / ${days.length}  ·  ${label}  ·  ${matches.length} match(es) so far`
-          );
-          await new Promise((r) => setTimeout(r, 120));
-        }
+        );
 
-        renderResults(matches, query, caseSensitive);
+        allMatches.sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1));
+        lastMatches = allMatches;
+        renderResults(allMatches, query, caseSensitive);
+        const sec = ((performance.now() - t0) / 1000).toFixed(1);
+        const mb = (bytesTotal / 1048576).toFixed(1);
         setStatus(
           signal.aborted
-            ? `Stopped early. ${matches.length} match(es) found.`
-            : `Done. Scanned ${days.length} day(s). ${matches.length} match(es).`,
-          matches.length ? "ok" : ""
+            ? `Stopped. ${allMatches.length} match(es) · ${mb} MB · ${sec}s`
+            : `Done. ${daysOk} day(s) · ${allMatches.length} match(es) · ${mb} MB · ${sec}s`,
+          allMatches.length ? "ok" : ""
         );
       } catch (err) {
         if (err.name === "AbortError") {
-          setStatus(`Stopped. ${matches.length} match(es) found so far.`);
-          if (matches.length) renderResults(matches, query, caseSensitive);
+          setStatus(`Stopped. ${lastMatches.length} match(es) so far.`);
+          if (lastMatches.length) renderResults(lastMatches, query, caseSensitive);
         } else {
           setStatus("Error: " + (err.message || String(err)), "err");
         }
@@ -424,22 +428,13 @@
     }
 
     $("searchBtn").addEventListener("click", runSearch);
-    $("stopBtn").addEventListener("click", () => {
-      if (abortController) abortController.abort();
-    });
-    $("query").addEventListener("keydown", (e) => {
-      if (e.key === "Enter") runSearch();
-    });
-    $("channel").addEventListener("keydown", (e) => {
-      if (e.key === "Enter") runSearch();
-    });
+    $("stopBtn").addEventListener("click", () => abortController?.abort());
+    $("query").addEventListener("keydown", (e) => e.key === "Enter" && runSearch());
+    $("channel").addEventListener("keydown", (e) => e.key === "Enter" && runSearch());
     $("copyBtn").addEventListener("click", () => {
-      const lines = [...document.querySelectorAll(".msg")].map((el) => {
-        const time = el.querySelector(".time")?.textContent || "";
-        const user = el.querySelector(".user")?.textContent || "";
-        const text = el.querySelector(".text")?.textContent || "";
-        return `[${time}] ${user}: ${text}`;
-      });
+      const lines = lastMatches.map(
+        (m) => `[${m.timestamp.replace("T", " ").replace(/Z$/, "")}] ${m.displayName}: ${m.text}`
+      );
       navigator.clipboard.writeText(lines.join("\n")).then(() => {
         $("copyBtn").textContent = "Copied!";
         setTimeout(() => ($("copyBtn").textContent = "Copy results"), 1500);

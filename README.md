@@ -1,24 +1,23 @@
-# Channel Keyword Search
+# Channel Keyword Search (fast)
 
-Search any indexed Twitch channel chat logs by keyword **without requiring a username**.
+Search any indexed Twitch channel chat logs by keyword **without a username**.
 
-Uses the same JustLog data as [tv.supa.sh](https://tv.supa.sh) (`logs.zonian.dev`).
+Uses the same JustLog data as [tv.supa.sh](https://tv.supa.sh).
 
-## Live preview
+## Live
 
 https://htmlpreview.github.io/?https://raw.githubusercontent.com/testinganything/channel-keyword-search/main/index.html
 
-## How it works
+## Speed optimizations
 
-The JustLog API does not support channel-wide text search natively. This tool:
-1. Lists available days for the channel
-2. Downloads each day's full channel log
-3. Filters messages client-side for your phrase
+- **Plain-text day logs** instead of JSON (~6× less bandwidth)
+- **Parallel downloads** (8–32 concurrent days)
+- **Mirror failover** (zonian, logxx, potat, twitchmetrics, spanix, ivr)
+- Line-level filter (skip parse of non-matching lines)
+- Live progress: days / matches / MB / seconds
 
-## Usage
+## Limits
 
-- Channel: e.g. `kaicenat`
-- Keyword: e.g. `fuck bruce`
-- Optional date range and max days to scan
+There is still no server-side full-channel text search API. Busy stream days can be tens of MB each.
 
 Not affiliated with Twitch or tv.supa.sh.
