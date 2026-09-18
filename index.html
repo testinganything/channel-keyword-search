@@ -1,1 +1,123 @@
-PLACEHOLDER
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Channel Keyword Search</title>
+<style>
+:root{--bg:#0e0e10;--panel:#18181b;--border:#2a2a2e;--text:#efeff1;--muted:#adadb8;--accent:#9147ff;--accent-hover:#772ce8;--ok:#00c853;--err:#f44336;--msg-bg:#1f1f23}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.45}
+header{border-bottom:1px solid var(--border);padding:1rem 1.5rem;display:flex;align-items:center;gap:.75rem;background:var(--panel);flex-wrap:wrap}
+header h1{font-size:1.15rem;font-weight:700}
+header span{color:var(--muted);font-size:.85rem}
+main{max-width:980px;margin:0 auto;padding:1.5rem}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:1.25rem;margin-bottom:1.25rem}
+label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:.35rem;font-weight:500}
+.row{display:flex;flex-wrap:wrap;gap:.75rem;margin-bottom:.9rem}
+.field{flex:1 1 140px;min-width:120px}
+input,select{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:.55rem .7rem;font-size:.95rem;outline:none}
+input:focus{border-color:var(--accent)}
+button{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:.6rem 1.2rem;font-weight:600;cursor:pointer;font-size:.95rem}
+button:hover:not(:disabled){background:var(--accent-hover)}
+button:disabled{opacity:.5;cursor:not-allowed}
+button.secondary{background:transparent;border:1px solid var(--border);color:var(--text)}
+.actions{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
+.hint{font-size:.8rem;color:var(--muted);margin-top:.6rem}
+.status{font-size:.9rem;padding:.6rem .8rem;border-radius:6px;background:var(--msg-bg);border:1px solid var(--border);margin-bottom:1rem;white-space:pre-wrap;font-variant-numeric:tabular-nums}
+.status.err{border-color:var(--err);color:#ff8a80}
+.status.ok{border-color:var(--ok)}
+.progress{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin:.5rem 0 0}
+.progress>div{height:100%;background:var(--accent);width:0%;transition:width .12s ease}
+.meta{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;margin-bottom:.75rem;font-size:.85rem;color:var(--muted)}
+.results{display:flex;flex-direction:column;gap:.4rem}
+.msg{background:var(--msg-bg);border:1px solid var(--border);border-radius:6px;padding:.55rem .75rem;font-size:.9rem;display:grid;grid-template-columns:auto 1fr;gap:.35rem .75rem}
+.msg .time{color:var(--muted);font-size:.78rem;font-variant-numeric:tabular-nums;white-space:nowrap}
+.msg .user{color:var(--accent);font-weight:600;cursor:pointer}
+.msg .user:hover{text-decoration:underline}
+.msg .text{grid-column:1/-1;word-break:break-word}
+.msg .text mark{background:#5c3d00;color:#ffd54f;padding:0 2px;border-radius:2px}
+.empty{color:var(--muted);text-align:center;padding:2rem}
+footer{text-align:center;color:var(--muted);font-size:.75rem;padding:1.5rem}
+</style>
+</head>
+<body>
+<header>
+<h1>Channel Keyword Search</h1>
+<span>same JustLog data as tv.supa.sh · paced requests (avoids 429)</span>
+</header>
+<main>
+<div class="card">
+<div class="row">
+<div class="field"><label for="channel">Channel</label><input id="channel" placeholder="kaicenat" autocomplete="off" spellcheck="false"/></div>
+<div class="field" style="flex:2 1 220px"><label for="query">Keyword / phrase</label><input id="query" placeholder="fuck bruce" autocomplete="off"/></div>
+</div>
+<div class="row">
+<div class="field"><label for="from">From (optional)</label><input id="from" type="date"/></div>
+<div class="field"><label for="to">To (optional)</label><input id="to" type="date"/></div>
+<div class="field"><label for="limitDays">Max days to scan</label>
+<select id="limitDays">
+<option value="1">1 day</option>
+<option value="3">3 days</option>
+<option value="7" selected>7 days</option>
+<option value="14">14 days</option>
+<option value="30">30 days</option>
+<option value="90">90 days</option>
+<option value="365">365 days</option>
+<option value="0">All available</option>
+</select></div>
+<div class="field"><label for="concurrency">Parallel downloads</label>
+<select id="concurrency">
+<option value="1">1 (no parallel)</option>
+<option value="2" selected>2 (recommended)</option>
+<option value="3">3</option>
+<option value="4">4</option>
+</select></div>
+</div>
+<div class="actions">
+<button id="searchBtn">Search</button>
+<button id="stopBtn" class="secondary" disabled>Stop</button>
+<label style="display:flex;align-items:center;gap:.4rem;margin:0;color:var(--muted);font-size:.85rem">
+<input type="checkbox" id="caseSensitive" style="width:auto"/>Case sensitive</label>
+</div>
+<p class="hint">Hosts rate-limit with <strong>HTTP 429</strong>. Default is 2 parallel + ~400ms gap between requests; on 429 the gap increases automatically and the day is retried.</p>
+</div>
+<div id="status" class="status" style="display:none"></div>
+<div id="progressWrap" style="display:none"><div class="progress"><div id="progressBar"></div></div></div>
+<div class="card" id="resultsCard" style="display:none">
+<div class="meta"><span id="resultCount">0 matches</span>
+<button id="copyBtn" class="secondary" style="padding:.35rem .7rem;font-size:.8rem">Copy results</button></div>
+<div id="results" class="results"></div>
+</div>
+</main>
+<footer>Not affiliated with Twitch or tv.supa.sh · public JustLog instances</footer>
+<script>
+const MIRRORS=["https://logs.zonian.dev","https://logxx.dev","https://logs.potat.app","https://logs.twitchmetrics.xyz","https://logs.spanix.team","https://logs.ivr.fi"];
+const $=id=>document.getElementById(id);
+let abortController=null,activeBase=MIRRORS[0],lastMatches=[];
+let nextSlot=0,minGapMs=400;
+const LINE_RE=/^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]\s+#\S+\s+(\S+):\s(.*)$/;
+function setStatus(text,type=""){const el=$("status");el.style.display=text?"block":"none";el.className="status"+(type?" "+type:"");el.textContent=text}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&","<":"<",">":">",'"':""","'":"&#39;"}[c]))}
+function highlight(text,query,caseSensitive){const safe=escapeHtml(text);if(!query)return safe;const flags=caseSensitive?"g":"gi";const re=new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),flags);return safe.replace(re,m=>`<mark>${m}</mark>`)}
+function sleep(ms,signal){return new Promise((resolve,reject)=>{if(signal?.aborted)return reject(new DOMException("Aborted","AbortError"));const t=setTimeout(resolve,ms);signal?.addEventListener("abort",()=>{clearTimeout(t);reject(new DOMException("Aborted","AbortError"))},{once:true})})}
+async function pace(signal){const now=Date.now();const wait=Math.max(0,nextSlot-now);nextSlot=Math.max(now,nextSlot)+minGapMs;if(wait>0)await sleep(wait,signal)}
+async function fetchText(url,signal){const res=await fetch(url,{signal});if(!res.ok){const err=new Error(`${res.status}`);err.status=res.status;throw err}return res.text()}
+async function resolveBase(channel,signal){const errors=[];for(const base of MIRRORS){try{const res=await fetch(`${base}/list?channel=${encodeURIComponent(channel)}`,{signal});if(!res.ok){errors.push(`${base}: ${res.status}`);continue}const data=await res.json();const logs=data.availableLogs||[];if(logs.length){activeBase=base;return{base,dates:logs}}errors.push(`${base}: empty`)}catch(e){if(e.name==="AbortError")throw e;errors.push(`${base}: ${e.message}`)}}throw new Error("No mirror has logs for this channel.\n"+errors.slice(0,4).join("\n"))}
+function filterDates(dates,fromStr,toStr,limitDays){let list=dates.filter(d=>d.day!=null&&d.day!=="");if(fromStr)list=list.filter(d=>{const key=`${d.year}-${String(d.month).padStart(2,"0")}-${String(d.day).padStart(2,"0")}`;return key>=fromStr});if(toStr)list=list.filter(d=>{const key=`${d.year}-${String(d.month).padStart(2,"0")}-${String(d.day).padStart(2,"0")}`;return key<=toStr});list.sort((a,b)=>{const ka=`${a.year}-${String(a.month).padStart(2,"0")}-${String(a.day).padStart(2,"0")}`;const kb=`${b.year}-${String(b.month).padStart(2,"0")}-${String(b.day).padStart(2,"0")}`;return kb.localeCompare(ka)});if(limitDays>0)list=list.slice(0,limitDays);return list}
+function parseMatches(text,query,caseSensitive){const q=caseSensitive?query:query.toLowerCase();const matches=[];const lines=text.replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n");for(let i=0;i<lines.length;i++){let line=lines[i];if(!line)continue;const hay=caseSensitive?line:line.toLowerCase();if(!hay.includes(q))continue;const m=LINE_RE.exec(line);if(m){const body=m[3];const bodyHay=caseSensitive?body:body.toLowerCase();if(!bodyHay.includes(q))continue;matches.push({timestamp:m[1].replace(" ","T")+"Z",displayName:m[2],text:body})}else matches.push({timestamp:"",displayName:"?",text:line})}return{matches,bytes:text.length,lines:lines.length}}
+async function searchDay(channel,year,month,day,query,caseSensitive,signal){const url=`${activeBase}/channel/${encodeURIComponent(channel)}/${year}/${Number(month)}/${Number(day)}`;let lastErr;for(let attempt=0;attempt<5;attempt++){try{await pace(signal);const text=await fetchText(url,signal);if(minGapMs>400)minGapMs=Math.max(400,minGapMs-25);return parseMatches(text,query,caseSensitive)}catch(err){if(err.name==="AbortError")throw err;lastErr=err;if(err.status===404)break;if(err.status===429||err.status===503){minGapMs=Math.min(4000,Math.max(minGapMs*1.8,900));await sleep(minGapMs*(attempt+1)+Math.random()*500,signal);continue}if(attempt<3){await sleep(400+Math.random()*400,signal);continue}break}}throw lastErr||new Error("fetch failed")}
+async function mapPool(items,concurrency,fn,onProgress){const results=new Array(items.length);let next=0,done=0,stop=false;async function worker(){while(!stop){const i=next++;if(i>=items.length)return;try{results[i]=await fn(items[i],i)}catch(e){if(e.name==="AbortError"){stop=true;throw e}results[i]={error:true,err:e}}done++;onProgress(done,items.length,results[i])}}const n=Math.min(concurrency,Math.max(1,items.length));await Promise.all(Array.from({length:n},()=>worker()));return results}
+function renderResults(matches,query,caseSensitive){const box=$("results");$("resultsCard").style.display="block";$("resultCount").textContent=`${matches.length.toLocaleString()} match${matches.length===1?"":"es"}`;if(!matches.length){box.innerHTML=`<div class="empty">No messages matched.</div>`;return}const MAX_DOM=2000;const slice=matches.length>MAX_DOM?matches.slice(0,MAX_DOM):matches;box.innerHTML=(matches.length>MAX_DOM?`<div class="empty" style="padding:.5rem">Showing first ${MAX_DOM.toLocaleString()} of ${matches.length.toLocaleString()} (all in Copy)</div>`:"")+slice.map(m=>{const timeStr=m.timestamp?m.timestamp.replace("T"," ").replace(/Z$/," UTC"):"";return`<div class="msg"><span class="time">${escapeHtml(timeStr)}</span><span class="user" data-user="${escapeHtml(m.displayName)}">${escapeHtml(m.displayName)}</span><div class="text">${highlight(m.text||"",query,caseSensitive)}</div></div>`}).join("");box.querySelectorAll(".user").forEach(el=>{el.addEventListener("click",()=>{const ch=$("channel").value.trim().toLowerCase();const u=el.dataset.user;if(!u||u==="?")return;window.open(`https://tv.supa.sh/logs?c=${encodeURIComponent(ch)}&u=${encodeURIComponent(u)}`,"_blank")})})}
+async function runSearch(){const channel=$("channel").value.trim().toLowerCase();const query=$("query").value.trim();const caseSensitive=$("caseSensitive").checked;const fromStr=$("from").value||"";const toStr=$("to").value||"";const limitDays=Number($("limitDays").value);let concurrency=Number($("concurrency").value)||2;if(!channel)return setStatus("Enter a channel name.","err");if(!query)return setStatus("Enter a keyword or phrase.","err");abortController=new AbortController();const{signal}=abortController;$("searchBtn").disabled=true;$("stopBtn").disabled=false;$("resultsCard").style.display="none";$("progressWrap").style.display="block";$("progressBar").style.width="0%";lastMatches=[];nextSlot=0;minGapMs=400;const t0=performance.now();let bytesTotal=0,daysOk=0,daysFail=0;try{setStatus("Finding a mirror that has this channel…");const{base,dates:allDates}=await resolveBase(channel,signal);const days=filterDates(allDates,fromStr,toStr,limitDays);if(!days.length){setStatus("No days in the selected range.","err");return}if(days.length>14&&concurrency>2)concurrency=2;if(days.length>60&&concurrency>1)concurrency=1;minGapMs=days.length>30?550:400;setStatus(`Mirror: ${base}\n${days.length} day(s) queued · ${concurrency} parallel · gap ${minGapMs}ms\n0 / ${days.length}`);const allMatches=[];await mapPool(days,concurrency,async d=>{if(signal.aborted)throw new DOMException("Aborted","AbortError");try{const r=await searchDay(channel,d.year,d.month,d.day,query,caseSensitive,signal);return{ok:true,...r}}catch(err){if(err.name==="AbortError")throw err;return{ok:false,matches:[],bytes:0,error:true,status:err.status}}},(done,total,result)=>{if(result){if(result.ok){daysOk++;bytesTotal+=result.bytes||0;if(result.matches?.length)allMatches.push(...result.matches)}else daysFail++}$("progressBar").style.width=(done/total)*100+"%";const sec=((performance.now()-t0)/1000).toFixed(1);const mb=(bytesTotal/1048576).toFixed(1);setStatus(`Mirror: ${base}\n${total} day(s) · ${concurrency} parallel · gap ${Math.round(minGapMs)}ms\n${done} / ${total} done  ·  ok ${daysOk}  ·  fail ${daysFail}  ·  ${allMatches.length} match(es)\n${mb} MB  ·  ${sec}s`)});allMatches.sort((a,b)=>(a.timestamp<b.timestamp?1:-1));lastMatches=allMatches;renderResults(allMatches,query,caseSensitive);const sec=((performance.now()-t0)/1000).toFixed(1);const mb=(bytesTotal/1048576).toFixed(1);setStatus(`Done. ${daysOk} ok · ${daysFail} failed · ${allMatches.length} match(es) · ${mb} MB · ${sec}s`+(daysFail>daysOk?"\nMany days failed (likely 429). Set Parallel to 1 and try again.":""),allMatches.length?"ok":daysFail>daysOk?"err":"")}catch(err){if(err.name==="AbortError"){setStatus(`Stopped. ${lastMatches.length} match(es) so far.`);if(lastMatches.length)renderResults(lastMatches,query,caseSensitive)}else setStatus("Error: "+(err.message||String(err)),"err")}finally{$("searchBtn").disabled=false;$("stopBtn").disabled=true;abortController=null}}
+$("searchBtn").addEventListener("click",runSearch);
+$("stopBtn").addEventListener("click",()=>abortController?.abort());
+$("query").addEventListener("keydown",e=>e.key==="Enter"&&runSearch());
+$("channel").addEventListener("keydown",e=>e.key==="Enter"&&runSearch());
+$("copyBtn").addEventListener("click",()=>{const lines=lastMatches.map(m=>`[${(m.timestamp||"").replace("T"," ").replace(/Z$/,"")}] ${m.displayName}: ${m.text}`);navigator.clipboard.writeText(lines.join("\n")).then(()=>{$("copyBtn").textContent="Copied!";setTimeout(()=>$("copyBtn").textContent="Copy results",1500)})});
+const params=new URLSearchParams(location.search);
+if(params.get("c"))$("channel").value=params.get("c");
+if(params.get("q"))$("query").value=params.get("q");
+</script>
+</body>
+</html>
