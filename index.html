@@ -115,10 +115,10 @@
         <div class="field">
           <label for="concurrency">Parallel downloads</label>
           <select id="concurrency">
-            <option value="8">8</option>
-            <option value="16" selected>16</option>
+            <option value="6">6 (safest)</option>
+            <option value="12" selected>12</option>
+            <option value="16">16</option>
             <option value="24">24</option>
-            <option value="32">32</option>
           </select>
         </div>
       </div>
@@ -131,9 +131,9 @@
         </label>
       </div>
       <p class="hint">
-        Faster via: <strong>plain-text logs</strong> (~6× smaller than JSON),
-        <strong>parallel day fetches</strong> (16–32), line filter, mirror failover.
-        “All available” on a huge channel still moves a lot of data — try 30–90 days first.
+        Plain-text logs + parallel fetches + auto-retry on failed days.
+        Browsers limit connections per host — if many days fail, lower parallel to 6–12.
+        “All available” on Kai-sized channels downloads a lot of data.
       </p>
     </div>
 
@@ -191,15 +191,14 @@
       return safe.replace(re, (m) => `<mark>${m}</mark>`);
     }
 
-    async function fetchOk(url, signal) {
+    async function fetchText(url, signal) {
       const res = await fetch(url, { signal });
       if (!res.ok) {
-        const t = await res.text().catch(() => "");
-        const err = new Error(`${res.status} ${res.statusText}${t ? ": " + t.slice(0, 80) : ""}`);
+        const err = new Error(`${res.status}`);
         err.status = res.status;
         throw err;
       }
-      return res;
+      return res.text();
     }
 
     async function resolveBase(channel, signal) {
@@ -224,7 +223,7 @@
     }
 
     function filterDates(dates, fromStr, toStr, limitDays) {
-      let list = dates.filter((d) => d.day);
+      let list = dates.filter((d) => d.day != null && d.day !== "");
       if (fromStr) {
         list = list.filter((d) => {
           const key = `${d.year}-${String(d.month).padStart(2, "0")}-${String(d.day).padStart(2, "0")}`;
@@ -246,45 +245,69 @@
       return list;
     }
 
-    async function searchDay(channel, year, month, day, query, caseSensitive, signal) {
-      const url = `${activeBase}/channel/${encodeURIComponent(channel)}/${year}/${month}/${day}`;
-      const res = await fetchOk(url, signal);
-      const text = await res.text();
+    function parseMatches(text, query, caseSensitive) {
       const q = caseSensitive ? query : query.toLowerCase();
       const matches = [];
-      const lines = text.split("\n");
+      const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
       for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
+        let line = lines[i];
         if (!line) continue;
         const hay = caseSensitive ? line : line.toLowerCase();
         if (!hay.includes(q)) continue;
         const m = LINE_RE.exec(line);
-        if (!m) continue;
-        const body = m[3];
-        const bodyHay = caseSensitive ? body : body.toLowerCase();
-        if (!bodyHay.includes(q)) continue;
-        matches.push({
-          timestamp: m[1].replace(" ", "T") + "Z",
-          displayName: m[2],
-          text: body,
-        });
+        if (m) {
+          const body = m[3];
+          const bodyHay = caseSensitive ? body : body.toLowerCase();
+          if (!bodyHay.includes(q)) continue;
+          matches.push({
+            timestamp: m[1].replace(" ", "T") + "Z",
+            displayName: m[2],
+            text: body,
+          });
+        } else {
+          matches.push({ timestamp: "", displayName: "?", text: line });
+        }
       }
       return { matches, bytes: text.length, lines: lines.length };
+    }
+
+    async function searchDay(channel, year, month, day, query, caseSensitive, signal) {
+      const url = `${activeBase}/channel/${encodeURIComponent(channel)}/${year}/${Number(month)}/${Number(day)}`;
+      let lastErr;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          if (attempt > 0) await new Promise((r) => setTimeout(r, 400 + Math.random() * 400));
+          const text = await fetchText(url, signal);
+          return parseMatches(text, query, caseSensitive);
+        } catch (err) {
+          if (err.name === "AbortError") throw err;
+          lastErr = err;
+          if (err.status === 404) break;
+        }
+      }
+      throw lastErr || new Error("fetch failed");
     }
 
     async function mapPool(items, concurrency, fn, onProgress) {
       const results = new Array(items.length);
       let next = 0;
       let done = 0;
+      let stop = false;
       async function worker() {
-        while (next < items.length) {
+        while (!stop) {
           const i = next++;
-          results[i] = await fn(items[i], i);
+          if (i >= items.length) return;
+          try {
+            results[i] = await fn(items[i], i);
+          } catch (e) {
+            if (e.name === "AbortError") { stop = true; throw e; }
+            results[i] = { error: true, err: e };
+          }
           done++;
           onProgress(done, items.length, results[i]);
         }
       }
-      const n = Math.min(concurrency, items.length);
+      const n = Math.min(concurrency, Math.max(1, items.length));
       await Promise.all(Array.from({ length: n }, () => worker()));
       return results;
     }
@@ -303,24 +326,21 @@
         (matches.length > MAX_DOM
           ? `<div class="empty" style="padding:0.5rem;">Showing first ${MAX_DOM.toLocaleString()} of ${matches.length.toLocaleString()} (all in Copy)</div>`
           : "") +
-        slice
-          .map((m) => {
-            const timeStr = m.timestamp.replace("T", " ").replace(/Z$/, " UTC");
-            return `<div class="msg">
+        slice.map((m) => {
+          const timeStr = m.timestamp ? m.timestamp.replace("T", " ").replace(/Z$/, " UTC") : "";
+          return `<div class="msg">
             <span class="time">${escapeHtml(timeStr)}</span>
             <span class="user" data-user="${escapeHtml(m.displayName)}">${escapeHtml(m.displayName)}</span>
             <div class="text">${highlight(m.text || "", query, caseSensitive)}</div>
           </div>`;
-          })
-          .join("");
+        }).join("");
 
       box.querySelectorAll(".user").forEach((el) => {
         el.addEventListener("click", () => {
           const ch = $("channel").value.trim().toLowerCase();
-          window.open(
-            `https://tv.supa.sh/logs?c=${encodeURIComponent(ch)}&u=${encodeURIComponent(el.dataset.user)}`,
-            "_blank"
-          );
+          const u = el.dataset.user;
+          if (!u || u === "?") return;
+          window.open(`https://tv.supa.sh/logs?c=${encodeURIComponent(ch)}&u=${encodeURIComponent(u)}`, "_blank");
         });
       });
     }
@@ -332,7 +352,7 @@
       const fromStr = $("from").value || "";
       const toStr = $("to").value || "";
       const limitDays = Number($("limitDays").value);
-      const concurrency = Number($("concurrency").value) || 16;
+      let concurrency = Number($("concurrency").value) || 12;
 
       if (!channel) return setStatus("Enter a channel name.", "err");
       if (!query) return setStatus("Enter a keyword or phrase.", "err");
@@ -360,9 +380,9 @@
           return;
         }
 
-        setStatus(
-          `Mirror: ${base}\nScanning ${days.length} day(s) · ${concurrency} parallel · plain text\n0 / ${days.length}`
-        );
+        if (days.length > 90 && concurrency > 12) concurrency = 12;
+
+        setStatus(`Mirror: ${base}\n${days.length} day(s) queued · ${concurrency} parallel · plain text\n0 / ${days.length}`);
 
         const allMatches = [];
 
@@ -370,34 +390,30 @@
           days,
           concurrency,
           async (d) => {
-            if (signal.aborted) return null;
-            const label = `${d.year}-${String(d.month).padStart(2, "0")}-${String(d.day).padStart(2, "0")}`;
+            if (signal.aborted) throw new DOMException("Aborted", "AbortError");
             try {
               const r = await searchDay(channel, d.year, d.month, d.day, query, caseSensitive, signal);
-              return { label, ...r };
+              return { ok: true, ...r };
             } catch (err) {
               if (err.name === "AbortError") throw err;
-              return { label, matches: [], bytes: 0, lines: 0, error: true };
+              return { ok: false, matches: [], bytes: 0, error: true, status: err.status };
             }
           },
           (done, total, result) => {
             if (result) {
-              if (result.error) daysFail++;
-              else {
+              if (result.ok) {
                 daysOk++;
                 bytesTotal += result.bytes || 0;
                 if (result.matches?.length) allMatches.push(...result.matches);
-              }
+              } else daysFail++;
             }
-            const pct = (done / total) * 100;
-            $("progressBar").style.width = pct + "%";
+            $("progressBar").style.width = (done / total) * 100 + "%";
             const sec = ((performance.now() - t0) / 1000).toFixed(1);
             const mb = (bytesTotal / 1048576).toFixed(1);
             setStatus(
-              `Mirror: ${base}\n` +
-                `Scanning ${total} day(s) · ${concurrency} parallel · plain text\n` +
-                `${done} / ${total}  ·  ${allMatches.length} match(es)  ·  ${mb} MB  ·  ${sec}s` +
-                (daysFail ? `  ·  ${daysFail} day(s) skipped` : "")
+              `Mirror: ${base}\n${total} day(s) · ${concurrency} parallel · plain text\n` +
+              `${done} / ${total} done  ·  ok ${daysOk}  ·  fail ${daysFail}  ·  ${allMatches.length} match(es)\n` +
+              `${mb} MB  ·  ${sec}s`
             );
           }
         );
@@ -408,10 +424,9 @@
         const sec = ((performance.now() - t0) / 1000).toFixed(1);
         const mb = (bytesTotal / 1048576).toFixed(1);
         setStatus(
-          signal.aborted
-            ? `Stopped. ${allMatches.length} match(es) · ${mb} MB · ${sec}s`
-            : `Done. ${daysOk} day(s) · ${allMatches.length} match(es) · ${mb} MB · ${sec}s`,
-          allMatches.length ? "ok" : ""
+          `Done. ${daysOk} ok · ${daysFail} failed · ${allMatches.length} match(es) · ${mb} MB · ${sec}s` +
+          (daysFail > daysOk ? "\nMany days failed — lower Parallel to 6–12 and try again." : ""),
+          allMatches.length ? "ok" : daysFail > daysOk ? "err" : ""
         );
       } catch (err) {
         if (err.name === "AbortError") {
@@ -433,7 +448,7 @@
     $("channel").addEventListener("keydown", (e) => e.key === "Enter" && runSearch());
     $("copyBtn").addEventListener("click", () => {
       const lines = lastMatches.map(
-        (m) => `[${m.timestamp.replace("T", " ").replace(/Z$/, "")}] ${m.displayName}: ${m.text}`
+        (m) => `[${(m.timestamp || "").replace("T", " ").replace(/Z$/, "")}] ${m.displayName}: ${m.text}`
       );
       navigator.clipboard.writeText(lines.join("\n")).then(() => {
         $("copyBtn").textContent = "Copied!";
