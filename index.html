@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Channel Keyword Search — JustLog</title>
+  <style>
+    :root {
+      --bg: #0e0e10;
+      --panel: #18181b;
+      --border: #2a2a2e;
+      --text: #efeff1;
+      --muted: #adadb8;
+      --accent: #9147ff;
+      --accent-hover: #772ce8;
+      --ok: #00c853;
+      --warn: #ffb300;
+      --err: #f44336;
+      --msg-bg: #1f1f23;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.45;
+    }
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--panel);
+    }
+    header h1 { font-size: 1.15rem; font-weight: 700; }
+    header span { color: var(--muted); font-size: 0.85rem; }
+    main { max-width: 960px; margin: 0 auto; padding: 1.5rem; }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+      font-weight: 500;
+    }
+    .row { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.9rem; }
+    .field { flex: 1 1 140px; min-width: 120px; }
+    input, select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 0.55rem 0.7rem;
+      font-size: 0.95rem;
+      outline: none;
+    }
+    input:focus { border-color: var(--accent); }
+    button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 0.6rem 1.2rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+    button:hover:not(:disabled) { background: var(--accent-hover); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    button.secondary {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    button.secondary:hover:not(:disabled) { border-color: var(--muted); }
+    .actions { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+    .hint { font-size: 0.8rem; color: var(--muted); margin-top: 0.6rem; }
+    .status {
+      font-size: 0.9rem;
+      padding: 0.6rem 0.8rem;
+      border-radius: 6px;
+      background: var(--msg-bg);
+      border: 1px solid var(--border);
+      margin-bottom: 1rem;
+      white-space: pre-wrap;
+    }
+    .status.err { border-color: var(--err); color: #ff8a80; }
+    .status.ok { border-color: var(--ok); }
+    .progress {
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+      margin: 0.5rem 0 0;
+    }
+    .progress > div {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width 0.15s ease;
+    }
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .results { display: flex; flex-direction: column; gap: 0.4rem; }
+    .msg {
+      background: var(--msg-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.55rem 0.75rem;
+      font-size: 0.9rem;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.35rem 0.75rem;
+    }
+    .msg .time { color: var(--muted); font-size: 0.78rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .msg .user { color: var(--accent); font-weight: 600; cursor: pointer; }
+    .msg .user:hover { text-decoration: underline; }
+    .msg .text { grid-column: 1 / -1; word-break: break-word; }
+    .msg .text mark {
+      background: #5c3d00;
+      color: #ffd54f;
+      padding: 0 2px;
+      border-radius: 2px;
+    }
+    .empty { color: var(--muted); text-align: center; padding: 2rem; }
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.75rem;
+      padding: 1.5rem;
+    }
+    footer a { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Channel Keyword Search</h1>
+    <span>same JustLog data as tv.supa.sh · no username required</span>
+  </header>
+
+  <main>
+    <div class="card">
+      <div class="row">
+        <div class="field">
+          <label for="channel">Channel</label>
+          <input id="channel" placeholder="kaicenat" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="field" style="flex: 2 1 220px;">
+          <label for="query">Keyword / phrase</label>
+          <input id="query" placeholder="fuck bruce" autocomplete="off" />
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="from">From (optional)</label>
+          <input id="from" type="date" />
+        </div>
+        <div class="field">
+          <label for="to">To (optional)</label>
+          <input id="to" type="date" />
+        </div>
+        <div class="field">
+          <label for="limitDays">Max days to scan</label>
+          <select id="limitDays">
+            <option value="1">1 day</option>
+            <option value="3">3 days</option>
+            <option value="7" selected>7 days</option>
+            <option value="14">14 days</option>
+            <option value="30">30 days</option>
+            <option value="90">90 days</option>
+            <option value="0">All available (slow)</option>
+          </select>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="searchBtn">Search</button>
+        <button id="stopBtn" class="secondary" disabled>Stop</button>
+        <label style="display:flex;align-items:center;gap:0.4rem;margin:0;color:var(--muted);font-size:0.85rem;">
+          <input type="checkbox" id="caseSensitive" style="width:auto;" />
+          Case sensitive
+        </label>
+      </div>
+      <p class="hint">
+        Uses <code>logs.zonian.dev</code> (same backend as tv.supa.sh).
+        Full-channel text search is not a native API — this tool downloads each day's channel log and filters in the browser.
+        Big channels / long ranges will take time and use bandwidth.
+      </p>
+    </div>
+
+    <div id="status" class="status" style="display:none;"></div>
+    <div id="progressWrap" style="display:none;">
+      <div class="progress"><div id="progressBar"></div></div>
+    </div>
+
+    <div class="card" id="resultsCard" style="display:none;">
+      <div class="meta">
+        <span id="resultCount">0 matches</span>
+        <button id="copyBtn" class="secondary" style="padding:0.35rem 0.7rem;font-size:0.8rem;">Copy results</button>
+      </div>
+      <div id="results" class="results"></div>
+    </div>
+  </main>
+
+  <footer>
+    Not affiliated with Twitch or tv.supa.sh · data from public JustLog instances
+  </footer>
+
+  <script>
+    const API = "https://logs.zonian.dev";
+    const $ = (id) => document.getElementById(id);
+
+    let abortController = null;
+
+    function setStatus(text, type = "") {
+      const el = $("status");
+      el.style.display = text ? "block" : "none";
+      el.className = "status" + (type ? " " + type : "");
+      el.textContent = text;
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, (c) =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
+      );
+    }
+
+    function highlight(text, query, caseSensitive) {
+      const safe = escapeHtml(text);
+      if (!query) return safe;
+      const flags = caseSensitive ? "g" : "gi";
+      const re = new RegExp(
+        query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+        flags
+      );
+      return safe.replace(re, (m) => `<mark>${m}</mark>`);
+    }
+
+    async function fetchJson(url, signal) {
+      const res = await fetch(url, { signal });
+      if (!res.ok) {
+        const t = await res.text().catch(() => "");
+        throw new Error(`${res.status} ${res.statusText}${t ? ": " + t.slice(0, 120) : ""}`);
+      }
+      return res.json();
+    }
+
+    async function getAvailableDates(channel, signal) {
+      const data = await fetchJson(
+        `${API}/list?channel=${encodeURIComponent(channel)}`,
+        signal
+      );
+      return data.availableLogs || [];
+    }
+
+    async function getDayMessages(channel, year, month, day, signal) {
+      const path = day
+        ? `${API}/channel/${encodeURIComponent(channel)}/${year}/${month}/${day}?jsonBasic=1`
+        : `${API}/channel/${encodeURIComponent(channel)}/${year}/${month}?jsonBasic=1`;
+      const data = await fetchJson(path, signal);
+      return data.messages || [];
+    }
+
+    function filterDates(dates, fromStr, toStr, limitDays) {
+      let list = dates.filter((d) => d.day);
+      if (fromStr) {
+        const from = fromStr;
+        list = list.filter((d) => {
+          const key = `${d.year}-${String(d.month).padStart(2, "0")}-${String(d.day).padStart(2, "0")}`;
+          return key >= from;
+        });
+      }
+      if (toStr) {
+        const to = toStr;
+        list = list.filter((d) => {
+          const key = `${d.year}-${String(d.month).padStart(2, "0")}-${String(d.day).padStart(2, "0")}`;
+          return key <= to;
+        });
+      }
+      list.sort((a, b) => {
+        const ka = `${a.year}-${String(a.month).padStart(2, "0")}-${String(a.day).padStart(2, "0")}`;
+        const kb = `${b.year}-${String(b.month).padStart(2, "0")}-${String(b.day).padStart(2, "0")}`;
+        return kb.localeCompare(ka);
+      });
+      if (limitDays > 0) list = list.slice(0, limitDays);
+      return list;
+    }
+
+    function renderResults(matches, query, caseSensitive) {
+      const box = $("results");
+      $("resultsCard").style.display = "block";
+      $("resultCount").textContent = `${matches.length} match${matches.length === 1 ? "" : "es"}`;
+      if (!matches.length) {
+        box.innerHTML = `<div class="empty">No messages matched.</div>`;
+        return;
+      }
+      box.innerHTML = matches
+        .map((m) => {
+          const t = new Date(m.timestamp);
+          const timeStr = isNaN(t) ? m.timestamp : t.toISOString().replace("T", " ").replace(/\.\d+Z$/, " UTC");
+          return `<div class="msg">
+            <span class="time">${escapeHtml(timeStr)}</span>
+            <span class="user" title="Open user logs on tv.supa.sh" data-user="${escapeHtml(m.displayName)}">${escapeHtml(m.displayName)}</span>
+            <div class="text">${highlight(m.text || "", query, caseSensitive)}</div>
+          </div>`;
+        })
+        .join("");
+
+      box.querySelectorAll(".user").forEach((el) => {
+        el.addEventListener("click", () => {
+          const ch = $("channel").value.trim().toLowerCase();
+          const u = el.dataset.user;
+          window.open(
+            `https://tv.supa.sh/logs?c=${encodeURIComponent(ch)}&u=${encodeURIComponent(u)}`,
+            "_blank"
+          );
+        });
+      });
+    }
+
+    async function runSearch() {
+      const channel = $("channel").value.trim().toLowerCase();
+      const query = $("query").value.trim();
+      const caseSensitive = $("caseSensitive").checked;
+      const fromStr = $("from").value || "";
+      const toStr = $("to").value || "";
+      const limitDays = Number($("limitDays").value);
+
+      if (!channel) {
+        setStatus("Enter a channel name.", "err");
+        return;
+      }
+      if (!query) {
+        setStatus("Enter a keyword or phrase to search for.", "err");
+        return;
+      }
+
+      abortController = new AbortController();
+      const { signal } = abortController;
+      $("searchBtn").disabled = true;
+      $("stopBtn").disabled = false;
+      $("resultsCard").style.display = "none";
+      $("progressWrap").style.display = "block";
+      $("progressBar").style.width = "0%";
+
+      const matches = [];
+      try {
+        setStatus("Fetching available dates…");
+        const allDates = await getAvailableDates(channel, signal);
+        if (!allDates.length) {
+          setStatus("No logs found for this channel (or channel not indexed).", "err");
+          return;
+        }
+
+        const days = filterDates(allDates, fromStr, toStr, limitDays);
+        if (!days.length) {
+          setStatus("No days in the selected range.", "err");
+          return;
+        }
+
+        setStatus(`Scanning ${days.length} day(s) for “${query}”…\n0 / ${days.length}`);
+
+        for (let i = 0; i < days.length; i++) {
+          if (signal.aborted) break;
+          const d = days[i];
+          const label = `${d.year}-${String(d.month).padStart(2, "0")}-${String(d.day).padStart(2, "0")}`;
+          try {
+            const msgs = await getDayMessages(channel, d.year, d.month, d.day, signal);
+            const q = caseSensitive ? query : query.toLowerCase();
+            for (const m of msgs) {
+              const text = m.text || "";
+              const hay = caseSensitive ? text : text.toLowerCase();
+              if (hay.includes(q)) {
+                matches.push(m);
+              }
+            }
+          } catch (err) {
+            if (err.name === "AbortError") throw err;
+            console.warn("day failed", label, err);
+          }
+          const pct = ((i + 1) / days.length) * 100;
+          $("progressBar").style.width = pct + "%";
+          setStatus(
+            `Scanning ${days.length} day(s) for “${query}”…\n${i + 1} / ${days.length}  ·  ${label}  ·  ${matches.length} match(es) so far`
+          );
+          await new Promise((r) => setTimeout(r, 120));
+        }
+
+        renderResults(matches, query, caseSensitive);
+        setStatus(
+          signal.aborted
+            ? `Stopped early. ${matches.length} match(es) found.`
+            : `Done. Scanned ${days.length} day(s). ${matches.length} match(es).`,
+          matches.length ? "ok" : ""
+        );
+      } catch (err) {
+        if (err.name === "AbortError") {
+          setStatus(`Stopped. ${matches.length} match(es) found so far.`);
+          if (matches.length) renderResults(matches, query, caseSensitive);
+        } else {
+          setStatus("Error: " + (err.message || String(err)), "err");
+        }
+      } finally {
+        $("searchBtn").disabled = false;
+        $("stopBtn").disabled = true;
+        abortController = null;
+      }
+    }
+
+    $("searchBtn").addEventListener("click", runSearch);
+    $("stopBtn").addEventListener("click", () => {
+      if (abortController) abortController.abort();
+    });
+    $("query").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") runSearch();
+    });
+    $("channel").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") runSearch();
+    });
+    $("copyBtn").addEventListener("click", () => {
+      const lines = [...document.querySelectorAll(".msg")].map((el) => {
+        const time = el.querySelector(".time")?.textContent || "";
+        const user = el.querySelector(".user")?.textContent || "";
+        const text = el.querySelector(".text")?.textContent || "";
+        return `[${time}] ${user}: ${text}`;
+      });
+      navigator.clipboard.writeText(lines.join("\n")).then(() => {
+        $("copyBtn").textContent = "Copied!";
+        setTimeout(() => ($("copyBtn").textContent = "Copy results"), 1500);
+      });
+    });
+
+    const params = new URLSearchParams(location.search);
+    if (params.get("c")) $("channel").value = params.get("c");
+    if (params.get("q")) $("query").value = params.get("q");
+  </script>
+</body>
+</html>
